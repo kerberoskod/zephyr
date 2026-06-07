@@ -27,7 +27,7 @@ class Review(Base):
     findings = Column(JSON, nullable=True)
     error = Column(Text, nullable=True)
     total_comments = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.now(datetime.UTC))
     completed_at = Column(DateTime, nullable=True)
 
     __table_args__ = (

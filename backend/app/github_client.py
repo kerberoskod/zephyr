@@ -1,7 +1,9 @@
 import hashlib
 import hmac
 import httpx
+import logging
 
+logger = logging.getLogger(__name__)
 
 GITHUB_API = "https://api.github.com"
 
@@ -11,62 +13,45 @@ class GitHubClient:
         self.token = token
         self.headers = {
             "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github.v3.diff",
             "User-Agent": "zephyr-code-review",
         }
+        self._client = httpx.AsyncClient(timeout=httpx.Timeout(30.0))
+
+    async def close(self):
+        await self._client.aclose()
 
     async def get_pr_diff(self, repo_full_name: str, pr_number: int) -> str | None:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                f"{GITHUB_API}/repos/{repo_full_name}/pulls/{pr_number}",
-                headers=self.headers,
-            )
-            if resp.status_code != 200:
-                return None
-            return resp.text
+        headers = {**self.headers, "Accept": "application/vnd.github.v3.diff"}
+        resp = await self._client.get(
+            f"{GITHUB_API}/repos/{repo_full_name}/pulls/{pr_number}",
+            headers=headers,
+        )
+        if resp.status_code != 200:
+            return None
+        return resp.text
 
     async def get_pr_details(self, repo_full_name: str, pr_number: int) -> dict | None:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(
-                f"{GITHUB_API}/repos/{repo_full_name}/pulls/{pr_number}",
-                headers={**self.headers, "Accept": "application/vnd.github.v3+json"},
-            )
-            if resp.status_code != 200:
-                return None
-            return resp.json()
+        headers = {**self.headers, "Accept": "application/vnd.github.v3+json"}
+        resp = await self._client.get(
+            f"{GITHUB_API}/repos/{repo_full_name}/pulls/{pr_number}",
+            headers=headers,
+        )
+        if resp.status_code != 200:
+            return None
+        return resp.json()
 
     async def post_comment(
         self, repo_full_name: str, pr_number: int, body: str
     ) -> bool:
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                f"{GITHUB_API}/repos/{repo_full_name}/pulls/{pr_number}/comments",
-                headers={**self.headers, "Accept": "application/vnd.github.v3+json"},
-                json={"body": body},
-            )
-            return resp.status_code == 201
-
-    async def post_review_comment(
-        self,
-        repo_full_name: str,
-        pr_number: int,
-        body: str,
-        commit_id: str,
-        path: str,
-        line: int,
-    ) -> bool:
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                f"{GITHUB_API}/repos/{repo_full_name}/pulls/{pr_number}/comments",
-                headers={**self.headers, "Accept": "application/vnd.github.v3+json"},
-                json={
-                    "body": body,
-                    "commit_id": commit_id,
-                    "path": path,
-                    "line": line,
-                },
-            )
-            return resp.status_code == 201
+        headers = {**self.headers, "Accept": "application/vnd.github.v3+json"}
+        resp = await self._client.post(
+            f"{GITHUB_API}/repos/{repo_full_name}/issues/{pr_number}/comments",
+            headers=headers,
+            json={"body": body},
+        )
+        if resp.status_code != 201:
+            logger.error("Failed to post comment: %d %s", resp.status_code, resp.text)
+        return resp.status_code == 201
 
 async def get_installation_token(app_id: int, private_key: str, installation_id: int) -> str | None:
     import asyncio

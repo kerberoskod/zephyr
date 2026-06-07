@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     github_client_id: str = ""
     github_client_secret: str = ""
     database_url: str = "sqlite+aiosqlite:///./zephyr.db"
-    jwt_secret: str = "zephyr-jwt-secret-change-in-production"
+    jwt_secret: str = ""
     frontend_url: str = "http://localhost:5173"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}

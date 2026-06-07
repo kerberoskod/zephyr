@@ -1,6 +1,9 @@
+import logging
+
 from anthropic import AsyncAnthropic
 from app.config import settings
 
+logger = logging.getLogger(__name__)
 
 REVIEW_PROMPT = """You are Zephyr, an expert code reviewer. Analyze the following pull request diff and provide a thorough review.
 
@@ -47,6 +50,8 @@ class Reviewer:
         self.client = AsyncAnthropic(api_key=settings.anthropic_api_key)
 
     async def review_diff(self, diff: str) -> dict:
+        if len(diff) > 100000:
+            logger.warning("PR diff truncated from %d to 100000 characters", len(diff))
         response = await self.client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=4096,

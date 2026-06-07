@@ -1,9 +1,13 @@
+import asyncio
+import json
+import logging
+
 from fastapi import APIRouter, Request, HTTPException
 from app.github_client import verify_webhook, get_installation_token
 from app.config import settings
 from app.worker import process_review
-import json
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -13,9 +17,10 @@ async def github_webhook(request: Request):
     signature = request.headers.get("x-hub-signature-256", "")
     event = request.headers.get("x-github-event", "")
 
-    if settings.github_webhook_secret:
-        if not verify_webhook(body, signature, settings.github_webhook_secret):
-            raise HTTPException(status_code=401, detail="Invalid signature")
+    if not settings.github_webhook_secret:
+        raise HTTPException(status_code=500, detail="Webhook secret not configured")
+    if not verify_webhook(body, signature, settings.github_webhook_secret):
+        raise HTTPException(status_code=401, detail="Invalid signature")
 
     if event != "pull_request":
         return {"status": "ignored", "event": event}
@@ -41,9 +46,9 @@ async def github_webhook(request: Request):
             int(settings.github_app_id), settings.github_private_key, installation_id
         )
 
-    import asyncio
-    asyncio.create_task(
+    task = asyncio.create_task(
         process_review(repo_full_name, pr_number, token or "")
     )
+    task.add_done_callback(lambda t: logger.error("Review task failed: %s", t.exception()) if t.exception() else None)
 
     return {"status": "queued", "repo": repo_full_name, "pr": pr_number}

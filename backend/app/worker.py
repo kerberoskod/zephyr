@@ -1,21 +1,40 @@
 import datetime
+import logging
 
-from app.config import settings
+from sqlalchemy import select
+
 from app.github_client import GitHubClient
 from app.reviewer import Reviewer
 from app.models import Review, async_session
 
+logger = logging.getLogger(__name__)
 
-async def process_review(repo: str, pr_number: int, installation_token: str):
-    review_id = None
-    async with async_session() as session:
+
+async def get_or_create_review(session, repo: str, pr_number: int) -> Review:
+    result = await session.execute(
+        select(Review).where(
+            Review.repo_full_name == repo,
+            Review.pr_number == pr_number,
+        )
+    )
+    review = result.scalar_one_or_none()
+    if review:
+        review.status = "processing"
+        review.error = None
+    else:
         review = Review(
             repo_full_name=repo,
             pr_number=pr_number,
             status="processing",
         )
         session.add(review)
-        await session.commit()
+    await session.commit()
+    return review
+
+
+async def process_review(repo: str, pr_number: int, installation_token: str):
+    async with async_session() as session:
+        review = await get_or_create_review(session, repo, pr_number)
         review_id = review.id
 
     gh = GitHubClient(installation_token)
@@ -43,13 +62,13 @@ async def process_review(repo: str, pr_number: int, installation_token: str):
                 review.diff_summary = summary
                 review.findings = findings
                 review.total_comments = len(findings)
-                review.completed_at = datetime.datetime.utcnow()
+                review.completed_at = datetime.datetime.now(datetime.UTC)
                 await session.commit()
 
         critical = [f for f in findings if f.get("severity") == "critical"]
         major = [f for f in findings if f.get("severity") == "major"]
 
-        body = f"### Zephyr Code Review\n\n"
+        body = "### Zephyr Code Review\n\n"
         body += f"**Summary:** {summary}\n\n"
         body += f"**Findings:** {len(findings)} total"
         if critical:
@@ -73,6 +92,7 @@ async def process_review(repo: str, pr_number: int, installation_token: str):
         await gh.post_comment(repo, pr_number, body)
 
     except Exception as e:
+        logger.exception("Review failed for %s PR #%d", repo, pr_number)
         async with async_session() as session:
             review = await session.get(Review, review_id) if review_id else None
             if review is None:
@@ -82,3 +102,5 @@ async def process_review(repo: str, pr_number: int, installation_token: str):
                 review.status = "failed"
                 review.error = str(e)
             await session.commit()
+    finally:
+        await gh.close()

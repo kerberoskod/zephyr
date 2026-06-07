@@ -1,7 +1,7 @@
-import uuid
+import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +10,8 @@ from app.config import settings
 from app.models import Review, init_db, get_session
 from app.schemas import ReviewListResponse, ReviewResponse
 from app.webhook import router as webhook_router
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
 
 @asynccontextmanager
@@ -33,8 +35,8 @@ app.include_router(webhook_router, prefix="/api")
 
 @app.get("/api/reviews", response_model=ReviewListResponse)
 async def list_reviews(
-    page: int = 1,
-    limit: int = 20,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
     session: AsyncSession = Depends(get_session),
 ):
     offset = (page - 1) * limit
