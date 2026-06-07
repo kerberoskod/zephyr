@@ -44,7 +44,7 @@ Webhook → FastAPI → Fetch diff
 |---|---|
 | **Backend** | Python 3.12, FastAPI, SQLAlchemy (async), aiosqlite |
 | **AI** | Anthropic Claude Sonnet 4 |
-| **Queue** | ARQ + Redis |
+| **Processing** | asyncio background tasks |
 | **Frontend** | React 19, TypeScript, Vite, Tailwind CSS |
 | **GitHub** | GitHub App (webhooks, OAuth, API v3) |
 
@@ -77,7 +77,6 @@ npm install
 npm run dev  # http://localhost:5173, proxies /api to :8000
 ```
 
-> Requires Redis running locally on port 6379 for the ARQ task queue.
 
 ## Environment Variables
 
@@ -89,7 +88,6 @@ npm run dev  # http://localhost:5173, proxies /api to :8000
 | `GITHUB_WEBHOOK_SECRET` | Webhook secret for signature verification |
 | `GITHUB_CLIENT_ID` | GitHub OAuth client ID |
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth client secret |
-| `REDIS_URL` | Redis connection string |
 | `DATABASE_URL` | Database connection string |
 | `JWT_SECRET` | JWT signing secret |
 | `FRONTEND_URL` | Frontend URL for CORS |
