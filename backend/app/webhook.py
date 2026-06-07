@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Request, HTTPException
-from app.github_client import verify_webhook
+from app.github_client import verify_webhook, get_installation_token
 from app.config import settings
 from app.worker import process_review
-import hashlib
 import json
 
 router = APIRouter()
@@ -36,9 +35,15 @@ async def github_webhook(request: Request):
     if not repo_full_name or not pr_number or not installation_id:
         raise HTTPException(status_code=400, detail="Missing required fields")
 
+    token = None
+    if settings.github_app_id and settings.github_private_key:
+        token = await get_installation_token(
+            int(settings.github_app_id), settings.github_private_key, installation_id
+        )
+
     import asyncio
     asyncio.create_task(
-        process_review(repo_full_name, pr_number, installation_id)
+        process_review(repo_full_name, pr_number, token or "")
     )
 
     return {"status": "queued", "repo": repo_full_name, "pr": pr_number}

@@ -7,6 +7,7 @@ from app.models import Review, async_session
 
 
 async def process_review(repo: str, pr_number: int, installation_token: str):
+    review_id = None
     async with async_session() as session:
         review = Review(
             repo_full_name=repo,
@@ -73,7 +74,7 @@ async def process_review(repo: str, pr_number: int, installation_token: str):
 
     except Exception as e:
         async with async_session() as session:
-            review = await session.get(Review, review_id) if "review_id" in dir() else None
+            review = await session.get(Review, review_id) if review_id else None
             if review is None:
                 review = Review(repo_full_name=repo, pr_number=pr_number, status="failed", error=str(e))
                 session.add(review)

@@ -68,16 +68,17 @@ class GitHubClient:
             )
             return resp.status_code == 201
 
-    async def get_installation_token(self, installation_id: int) -> str | None:
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                f"{GITHUB_API}/app/installations/{installation_id}/access_tokens",
-                headers={**self.headers, "Accept": "application/vnd.github.v3+json"},
-            )
-            if resp.status_code != 201:
-                return None
-            data = resp.json()
-            return data.get("token")
+async def get_installation_token(app_id: int, private_key: str, installation_id: int) -> str | None:
+    import asyncio
+    try:
+        from github import GithubIntegration
+        integration = GithubIntegration(app_id, private_key)
+        token = await asyncio.to_thread(
+            lambda: integration.get_access_token(installation_id).token
+        )
+        return token
+    except Exception:
+        return None
 
 
 def verify_webhook(payload_body: bytes, signature: str, secret: str) -> bool:

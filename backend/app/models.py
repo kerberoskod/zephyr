@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from sqlalchemy import Column, String, Text, DateTime, Integer, JSON, Boolean
+from sqlalchemy import Column, String, Text, DateTime, Integer, JSON, Boolean, UniqueConstraint
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
 from app.config import settings
@@ -30,7 +30,9 @@ class Review(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
 
-    unique_repo_pr = ("repo_full_name", "pr_number")
+    __table_args__ = (
+        UniqueConstraint("repo_full_name", "pr_number", name="unique_repo_pr"),
+    )
 
 
 async def init_db():
