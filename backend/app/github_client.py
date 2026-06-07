@@ -70,6 +70,8 @@ class GitHubClient:
 
 async def get_installation_token(app_id: int, private_key: str, installation_id: int) -> str | None:
     import asyncio
+    import logging
+    logger = logging.getLogger(__name__)
     try:
         from github import GithubIntegration
         integration = GithubIntegration(app_id, private_key)
@@ -77,7 +79,8 @@ async def get_installation_token(app_id: int, private_key: str, installation_id:
             lambda: integration.get_access_token(installation_id).token
         )
         return token
-    except Exception:
+    except Exception as e:
+        logger.exception("Failed to get installation token for installation %s: %s", installation_id, e)
         return None
 
 
