@@ -50,20 +50,34 @@ Webhook → FastAPI → Fetch diff
 
 ## Quick Start
 
+### Option 1: Docker (recommended)
+
 ```bash
-# 1. Clone and enter
 git clone https://github.com/kerberoskod/zephyr.git
 cd zephyr
-
-# 2. Create .env (see .env.example)
 cp backend/.env.example backend/.env
 # Edit backend/.env with your API keys
-
-# 3. Start with Docker
 docker compose up -d
-
-# 4. Open http://localhost:5173
+# Open http://localhost:5173
 ```
+
+### Option 2: Local Development
+
+```bash
+# Backend
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env  # fill in your keys
+uvicorn app.main:app --reload  # http://localhost:8000
+
+# Frontend (separate terminal)
+cd frontend
+npm install
+npm run dev  # http://localhost:5173, proxies /api to :8000
+```
+
+> Requires Redis running locally on port 6379 for the ARQ task queue.
 
 ## Environment Variables
 
@@ -79,22 +93,6 @@ docker compose up -d
 | `DATABASE_URL` | Database connection string |
 | `JWT_SECRET` | JWT signing secret |
 | `FRONTEND_URL` | Frontend URL for CORS |
-
-## Local Development
-
-```bash
-# Backend
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env  # fill in your keys
-uvicorn app.main:app --reload
-
-# Frontend
-cd frontend
-npm install
-npm run dev
-```
 
 ## GitHub App Setup
 
