@@ -16,6 +16,8 @@ class ReviewResponse(BaseModel):
     created_at: datetime.datetime | None = None
     completed_at: datetime.datetime | None = None
 
+    model_config = {"from_attributes": True}
+
 
 class ReviewListResponse(BaseModel):
     reviews: list[ReviewResponse]

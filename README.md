@@ -1,6 +1,7 @@
 # Zephyr — AI Code Review
 
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![Tests](https://img.shields.io/badge/37_tests-passing-228B22?style=flat)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![Claude](https://img.shields.io/badge/Claude-Sonnet_4-9775FA?logo=anthropic&logoColor=white)
